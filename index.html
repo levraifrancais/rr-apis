@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rec Room API Bulk Lookup</title>
+    <style>
+        body { font-family: Arial; background:#0d1117; color:white; }
+        .container { max-width:800px; margin:auto; padding:20px; }
+        textarea { width:100%; height:70px; margin-bottom:10px; }
+        button { padding:8px 15px; margin:5px; }
+        .box { background:#161b22; padding:15px; border-radius:8px; margin-top:10px; }
+        pre { white-space:pre-wrap; word-break:break-word; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Rec Room Bulk API Lookup</h1>
+
+    <label>Users (un par ligne) :</label>
+    <textarea id="usernames"></textarea>
+
+    <label>Rooms (IDs un par ligne) :</label>
+    <textarea id="rooms"></textarea>
+
+    <button onclick="fetchAccounts()">Lookup Accounts</button>
+    <button onclick="fetchBulkImages()">Bulk Images</button>
+    <button onclick="checkInfluencers()">Check Influencers</button>
+    <button onclick="fetchPlayerEvents()">Player Events</button>
+    <button onclick="fetchProgression()">Player Progression</button>
+    <button onclick="lookupRooms()">Lookup Rooms</button>
+
+    <div id="output" class="box"></div>
+</div>
+
+<script>
+async function requestJSON(url, options = {}) {
+    try {
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error(res.status + " " + res.statusText);
+        return await res.json();
+    } catch (err) {
+        console.error(err);
+        return { error: err.message };
+    }
+}
+
+function show(data) {
+    document.getElementById("output").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+}
+
+// bulk accounts
+async function fetchAccounts() {
+    const users = document.getElementById("usernames").value.trim().split(/\n/).filter(u => u);
+    const url = "https://apim.rec.net/public/accounts/bulk";
+    const body = { usernames: users };
+    const data = await requestJSON(url, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+    });
+    show(data);
+}
+
+// bulk images
+async function fetchBulkImages() {
+    const users = document.getElementById("usernames").value.trim().split(/\n/).filter(u => u);
+    const url = "https://apim.rec.net/public/images/bulk";
+    // send username list or known IDs
+    const body = { usernames: users };
+    const data = await requestJSON(url, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+    });
+    show(data);
+}
+
+// influencer check
+async function checkInfluencers() {
+    const users = document.getElementById("usernames").value.trim().split(/\n/).filter(u => u);
+    // do one by one
+    let results = {};
+    for (let u of users) {
+        const url = "https://apim.rec.net/public/influencerpartnerprogram/isinfluencer?id=" + encodeURIComponent(u);
+        results[u] = await requestJSON(url);
+    }
+    show(results);
+}
+
+// player events
+async function fetchPlayerEvents() {
+    const users = document.getElementById("usernames").value.trim().split(/\n/).filter(u => u);
+    let results = {};
+    for (let u of users) {
+        const url = "https://apim.rec.net/public/playerevents/" + encodeURIComponent(u);
+        results[u] = await requestJSON(url);
+    }
+    show(results);
+}
+
+// bulk progression
+async function fetchProgression() {
+    const users = document.getElementById("usernames").value.trim().split(/\n/).filter(u => u);
+    const url = "https://apim.rec.net/public/players/progression/bulk";
+    const body = { usernames: users };
+    const data = await requestJSON(url, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+    });
+    show(data);
+}
+
+// bulk rooms
+async function lookupRooms() {
+    const rooms = document.getElementById("rooms").value.trim().split(/\n/).filter(r => r);
+    const url = "https://apim.rec.net/public/rooms/bulk";
+    const body = { ids: rooms };
+    const data = await requestJSON(url, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+    });
+    show(data);
+}
+
+</script>
+</body>
+</html>
